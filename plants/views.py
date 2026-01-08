@@ -1,4 +1,5 @@
 from django.shortcuts import render, get_object_or_404, redirect
+from django.db.models import Count
 from .models import Plant, WateringRecommendation, ProtectionAdvice
 from .forms import PlantForm
 from django.contrib.auth.decorators import login_required
@@ -20,7 +21,14 @@ def home(request):
 @login_required
 def plant_list(request):
     plants = Plant.objects.filter(owner=request.user)
-    return render(request, 'plants/plant_list.html', {'plants': plants})
+    plant_count = plants.count()
+    plants_by_category = plants.values('plant_type__category__name').annotate(category_count=Count('id'))
+
+    return render(request, 'plants/plant_list.html', {
+        'plants': plants,
+        'plant_count': plant_count,
+        'plants_by_category': plants_by_category,
+    })
 
 # Детали растения
 @login_required
