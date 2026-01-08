@@ -23,29 +23,35 @@
 ## 3. Модели данных (сущности)
 
 ### Plant (Растение)
-- name — название растения  
-- type — тип растения
-- description — описание  
+- plant_type — связь с PlantType (ForeignKey)
 - owner — владелец (User)  
 - city — город, где растёт растение  
+
+### PlantCategory (Категория растения)
+- name — название категории (например, Овощ, Ягода, Цветок)
+
+### PlantType (Тип растения)
+- name — название типа растения (например, Томат, Огурец)
+- category — связь с PlantCategory (ForeignKey)
+- description — описание растения
 
 ### WateringRecommendation (Рекомендации по поливу)
 - plant — связь с Plant (ForeignKey)  
 - date — дата рекомендации  
 - water_amount — количество воды в литрах  
-- notes — текстовое пояснение  
+- note — текстовое пояснение  
 
 ### ProtectionAdvice (Советы по защите растений)
-- plant — связь с Plant (ForeignKey)  
-- pest_type — тип вредителя или болезни  
+- plant — связь с PlantType (ForeignKey)  
+- pest_or_disease — тип вредителя или болезни  
 - recommendation — текст рекомендации  
 
 ### Weather (опционально, для кэширования погоды)
-- date — дата прогноза  
+- city — город
+- date — дата данных/прогноза  
 - temperature — температура  
 - humidity — влажность  
-- precipitation — осадки  
-- city — город  
+- precipitation — осадки 
 
 
 ## 4. Ключевой функционал (User Stories)
