@@ -3,7 +3,28 @@ from django.db.models import Count
 from .models import Plant, WateringRecommendation, ProtectionAdvice
 from .forms import PlantForm
 from django.contrib.auth.decorators import login_required
+from django.contrib import messages
+from django.contrib.auth.forms import UserCreationForm
 
+
+# Регистрация
+def register_view(request):
+    if request.user.is_authenticated:
+        messages.info(request, "Вы уже авторизованы!")
+        return redirect('home')
+
+    if request.method == "POST":
+        form = UserCreationForm(request.POST)
+        if form.is_valid():
+            form.save()
+            messages.success(request, "Вы успешно зарегистрировались!")
+            return redirect('login')
+        else:
+            messages.error(request, "Пожалуйста, исправьте ошибки в форме.")
+    else:
+        form = UserCreationForm()
+
+    return render(request, "registration/register.html", {"form": form})
 
 # Главная страница (для гостей)
 def home(request):
