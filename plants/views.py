@@ -5,6 +5,7 @@ from .forms import PlantForm
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.contrib.auth.forms import UserCreationForm
+from django.contrib.auth import authenticate, login
 
 
 # Регистрация
@@ -25,6 +26,25 @@ def register_view(request):
         form = UserCreationForm()
 
     return render(request, "registration/register.html", {"form": form})
+
+# Вход
+def login_view(request):
+    if request.user.is_authenticated:
+        return redirect('plant_list')
+
+    if request.method == "POST":
+        username = request.POST.get("username")
+        password = request.POST.get("password")
+        user = authenticate(request, username=username, password=password)
+
+        if user:
+            login(request, user)
+            messages.success(request, f"Добро пожаловать, {user.username}!")
+            return redirect('plant_list')
+        else:
+            messages.error(request, "Неверные учетные данные.")
+
+    return render(request, "registration/login.html")
 
 # Главная страница (для гостей)
 def home(request):
@@ -76,4 +96,3 @@ def add_plant(request):
     else:
         form = PlantForm()
     return render(request, 'plants/add_plant.html', {'form': form})
-
