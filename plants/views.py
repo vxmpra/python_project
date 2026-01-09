@@ -3,15 +3,12 @@ from django.db.models import Count
 from .models import Plant, WateringRecommendation, ProtectionAdvice, PlantType, PlantCategory
 from .forms import PlantForm
 from django.contrib.auth.decorators import login_required
-from django.contrib import messages
 from django.contrib.auth.forms import UserCreationForm
 from django.contrib.auth import authenticate, login, logout
 
 
 # Регистрация
 def register_view(request):
-    if request.user.is_authenticated:
-        return redirect('home')
 
     if request.method == "POST":
         form = UserCreationForm(request.POST)
@@ -36,7 +33,6 @@ def login_view(request):
 
         if user:
             login(request, user)
-            messages.success(request, f"Добро пожаловать, {user.username}!")
             return redirect('plant_list')
 
     return render(request, "registration/login.html")
@@ -44,15 +40,10 @@ def login_view(request):
 # Выход
 def logout_view(request):
     logout(request)
-    messages.success(request, "Вы успешно вышли из аккаунта.")
     return redirect('home')
 
 # Главная страница (для гостей)
 def home(request):
-    storage = messages.get_messages(request)
-    for message in storage:
-        pass
-
     plant_types = PlantType.objects.all().select_related('category')
 
     return render(request, "plants/base.html", {
@@ -107,10 +98,7 @@ def add_plant(request):
             plant = form.save(commit=False)
             plant.owner = request.user
             plant.save()
-            messages.success(request,'Растение успешно добавлено.')
             return redirect('plant_list')
-        else:
-            messages.error(request,'Пожалуйста, исправьте ошибки.')
     else:
         form = PlantForm(user=request.user)
 
