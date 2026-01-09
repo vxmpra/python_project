@@ -17,13 +17,19 @@
                 <form method="POST">
                     {% csrf_token %}
 
+                    {% if form.non_field_errors %}
+                    <div class="alert alert-danger">
+                        {% for error in form.non_field_errors %}
+                            {{ error }}
+                        {% endfor %}
+                    </div>
+                    {% endif %}
+
                     {% if form.city.errors %}
                     <div class="alert alert-danger">
-                        <strong>Ошибка в городе:</strong>
-                        <ul class="mb-0">
-                            {% for error in form.city.errors %}
-                                <li>{{ error }}</li>
-                            {% endfor %}
+                        {% for error in form.city.errors %}
+                            {{ error }}
+                        {% endfor %}
                         </ul>
                     </div>
                     {% endif %}

@@ -102,7 +102,7 @@ def plant_detail(request, pk):
 @login_required
 def add_plant(request):
     if request.method == 'POST':
-        form = PlantForm(request.POST)
+        form = PlantForm(request.POST, user=request.user)
         if form.is_valid():
             plant = form.save(commit=False)
             plant.owner = request.user
@@ -110,7 +110,8 @@ def add_plant(request):
             messages.success(request,'Растение успешно добавлено.')
             return redirect('plant_list')
         else:
-            messages.error(request,'Город не найден.')
+            messages.error(request,'Пожалуйста, исправьте ошибки.')
     else:
-        form = PlantForm()
+        form = PlantForm(user=request.user)
+
     return render(request, 'plants/add_plant.html', {'form': form})
