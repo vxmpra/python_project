@@ -20,23 +20,50 @@
 </nav>
 
 <div class="container">
-    <h2 class="text-center text-success mb-4">Мой сад</h2>
+    <h2 class="text-center text-success mb-4">Мой сад ({{ plant_count }} растений)</h2>
 
-    <div class="row justify-content-center">
-        {% for plant in plants %}
-        <div class="col-md-3 mb-4">
-            <div class="card shadow-sm h-100">
-                <div class="card-body">
-                    <h5 class="card-title text-success">{{ plant.plant_type.name }}</h5>
-                    <p class="card-text"><strong>Тип:</strong> {{ plant.plant_type.category.name }}</p>
-                    <a href="{% url 'plant_detail' plant.pk %}" class="btn btn-outline-success btn-sm mt-2">Подробнее</a>
+    {% if plants_by_category %}
+    <div class="mb-4">
+        <p class="mb-2"><strong>Растения по категориям:</strong></p>
+        <div class="d-flex flex-wrap gap-2 mb-3">
+            {% for category in plants_by_category %}
+            <span class="badge bg-success">
+                {{ category.plant_type__category__name }}: {{ category.category_count }}
+            </span>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+
+    {% if plants_by_category_dict %}
+        {% for category_name, category_plants in plants_by_category_dict.items %}
+        <div class="category-group mb-5">
+            <h4 class="text-success mb-3">
+                {{ category_name }}
+                <span class="badge bg-secondary">{{ category_plants|length }}</span>
+            </h4>
+
+            <div class="row">
+                {% for plant in category_plants %}
+                <div class="col-md-3 mb-4">
+                    <div class="card shadow-sm h-100">
+                        <div class="card-body">
+                            <h5 class="card-title text-success">{{ plant.plant_type.name }}</h5>
+                            <p class="card-text">
+                                <strong>Город:</strong> {{ plant.city }}
+                            </p>
+                            <a href="{% url 'plant_detail' plant.pk %}" class="btn btn-outline-success btn-sm">Подробнее</a>
+                        </div>
+                    </div>
                 </div>
+                {% endfor %}
             </div>
         </div>
-        {% empty %}
-        <p class="text-center">У вас пока нет растений. <a href="{% url 'add_plant' %}">Добавить первое</a></p>
         {% endfor %}
-    </div>
+
+    {% else %}
+        <p class="text-center">У вас пока нет растений. <a href="{% url 'add_plant' %}">Добавить первое</a></p>
+    {% endif %}
 </div>
 
 </body>

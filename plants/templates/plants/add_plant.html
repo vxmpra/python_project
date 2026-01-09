@@ -16,6 +16,18 @@
             <div class="card shadow-sm p-4">
                 <form method="POST">
                     {% csrf_token %}
+
+                    {% if form.city.errors %}
+                    <div class="alert alert-danger">
+                        <strong>Ошибка в городе:</strong>
+                        <ul class="mb-0">
+                            {% for error in form.city.errors %}
+                                <li>{{ error }}</li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+                    {% endif %}
+
                     <div class="mb-3">
                         <label class="form-label fw-bold">Название растения</label>
                         {{ form.plant_type }}
@@ -25,6 +37,13 @@
                         <label class="form-label fw-bold">Город</label>
                         {{ form.city }}
                         <small class="text-muted">Например: Москва, Санкт-Петербург</small>
+                        {% if form.city.errors %}
+                            <div class="text-danger small mt-1">
+                                {% for error in form.city.errors %}
+                                    {{ error }}
+                                {% endfor %}
+                            </div>
+                        {% endif %}
                     </div>
 
                     <div class="d-grid gap-2 mt-3">
