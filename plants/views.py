@@ -103,3 +103,17 @@ def add_plant(request):
         form = PlantForm(user=request.user)
 
     return render(request, 'plants/add_plant.html', {'form': form})
+
+# Рекомендации по защите растения от вредителей и болезней
+@login_required
+def protection_detail(request, pk):
+    plant = get_object_or_404(Plant, pk=pk, owner=request.user)
+
+    protection_list = ProtectionAdvice.objects.filter(
+        plant_type=plant.plant_type
+    )
+
+    return render(request, "plants/protection_detail.html", {
+        "plant": plant,
+        "protection_list": protection_list
+    })
