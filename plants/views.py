@@ -1,11 +1,11 @@
 from django.shortcuts import render, get_object_or_404, redirect
 from django.db.models import Count
-from .models import Plant, WateringRecommendation, ProtectionAdvice
+from .models import Plant, WateringRecommendation, ProtectionAdvice, PlantType, PlantCategory
 from .forms import PlantForm
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.contrib.auth.forms import UserCreationForm
-from django.contrib.auth import authenticate, login
+from django.contrib.auth import authenticate, login, logout
 
 
 # Регистрация
@@ -46,16 +46,20 @@ def login_view(request):
 
     return render(request, "registration/login.html")
 
+# Выход
+def logout_view(request):
+    logout(request)
+    messages.success(request, "Вы успешно вышли из аккаунта.")
+    return redirect('home')
+
 # Главная страница (для гостей)
 def home(request):
-    plants = Plant.objects.all().select_related(
-        'plant_type',
-        'plant_type__category'
-    )[:12]
+    plant_types = PlantType.objects.all().select_related('category')
 
     return render(request, "plants/base.html", {
-        "plants": plants,
-        "total_plants": Plant.objects.count(),
+        "plant_types": plant_types,
+        "total_plants": PlantType.objects.count(),
+        "total_categories": PlantCategory.objects.count(),
     })
 
 # Список всех растений пользователя

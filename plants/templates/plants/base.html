@@ -15,13 +15,25 @@
         <a href="{% url 'login' %}" class="btn btn-outline-success">Вход</a>
     </div>
 
+    <div class="alert alert-light border mb-4">
+        <p class="mb-0">
+            📊 В базе данных:
+            <strong>{{ total_plants }}</strong> видов растений
+            в <strong>{{ total_categories }}</strong> категориях
+        </p>
+    </div>
+
     <h3 class="mt-5 mb-3">Каталог растений</h3>
+
     <div class="row justify-content-center">
-        {% for plant in plants %}
+        {% for plant_type in plant_types %}
         <div class="col-md-2 mb-4">
             <div class="card shadow-sm h-100">
                 <div class="card-body">
-                    <h5 class="card-title text-success">{{ plant.plant_type.name }}</h5>
+                    <h5 class="card-title text-success">{{ plant_type.name }}</h5>
+                    <p class="card-text small">
+                        {{ plant_type.category.name }}
+                    </p>
                 </div>
             </div>
         </div>
