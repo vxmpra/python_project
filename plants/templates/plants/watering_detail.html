@@ -1,55 +1,32 @@
 {% extends 'layout.html' %}
-
-{% block title %}Рекомендации по поливу - {{ plant.plant_type.name }}{% endblock %}
-
+{% block title %}Погода для {{ plant.plant_type.name }}{% endblock %}
 {% block content %}
-<div class="container mt-5">
-    <h2 class="text-success mb-4">
-        Рекомендации по поливу для {{ plant.plant_type.name }}
-        <small class="text-muted">({{ plant.city }})</small>
-    </h2>
+<div class="container mt-4">
+    <h2>Погода для {{ plant.plant_type.name }} ({{ plant.city }})</h2>
+    <a href="{% url 'plant_detail' plant.pk %}" class="btn btn-sm btn-outline-secondary mb-3">← Назад</a>
 
-    <div class="card mb-4 shadow-sm">
-        <div class="card-body">
-            <h5 class="card-title mb-3">Рекомендация на сегодня:</h5>
-            <div class="alert alert-info">
-                <h4 class="text-center">{{ note }}</h4>
-                {% if recommendation_created %}
-                <p class="text-center mb-0 mt-2">
-                    <strong>Количество воды: {{ water_amount }} л</strong><br>
-                    <small class="text-muted">(расчет на 1 квадратный метр посадок)</small>
-                </p>
-                {% endif %}
-            </div>
-
-            {% if detailed_advice %}
-            <div class="mt-3 p-3 bg-light rounded">
-                <h6>Подробное описание:</h6>
-                <div style="white-space: pre-line; font-size: 0.9rem;">
-                    {{ detailed_advice }}
-                </div>
-            </div>
-            {% endif %}
-        </div>
-    </div>
-
-    <div class="card mb-4 shadow-sm">
-        <div class="card-body">
-            <h5 class="card-title mb-3">Погода в {{ plant.city }}:</h5>
-            <div class="row">
-                <div class="col-6">
-                    <p>Температура: {{ temperature }}°C</p>
-                    <p>Влажность: {{ humidity }}%</p>
-                </div>
-                <div class="col-6">
-                    <p>Осадки: {{ precipitation }} мм</p>
-                    <p>Сезон: {{ season }}</p>
+    <div class="row">
+        <div class="col-md-6">
+            <div class="card mb-3 h-100">
+                <div class="card-body">
+                    <h5>Погода</h5>
+                    <p><strong>Температура:</strong> {{ temperature }}°C</p>
+                    <p><strong>Влажность:</strong> {{ humidity }}%</p>
+                    <p><strong>Осадки:</strong> {{ precipitation }} мм</p>
+                    <p><strong>Сезон:</strong> {{ season }}</p>
+                    <p class="text-muted mb-0">{{ weather_description }}</p>
                 </div>
             </div>
         </div>
-    </div>
-    <div class="mb-5">
-        <a href="{% url 'plant_detail' plant.pk %}" class="btn btn-outline-secondary">← Назад</a>
+
+        <div class="col-md-6">
+            <div class="card mb-3 h-100">
+                <div class="card-body">
+                    <h5>Карта: {{ plant.city }}</h5>
+                    <img src="{{ map_url }}" class="img-fluid rounded" style="height:250px;width:100%;object-fit:cover">
+                </div>
+            </div>
+        </div>
     </div>
 </div>
 {% endblock %}

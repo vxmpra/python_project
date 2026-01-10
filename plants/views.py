@@ -1,3 +1,6 @@
+import os
+import requests
+from django.utils import timezone
 from django.shortcuts import render, get_object_or_404, redirect
 from django.db.models import Count
 from .models import Plant, WateringRecommendation, ProtectionAdvice, PlantType, PlantCategory
@@ -117,3 +120,38 @@ def protection_detail(request, pk):
         "plant": plant,
         "protection_list": protection_list
     })
+
+# Рекомендации по поливу
+@login_required
+def watering_detail(request, pk):
+    plant = get_object_or_404(Plant, pk=pk, owner=request.user)
+    API_KEY = os.environ.get('OPENWEATHER_API_KEY')
+
+    context = {"plant": plant, "map_url": ""}
+
+    try:
+        data = requests.get(
+            f"http://api.openweathermap.org/data/2.5/weather?q={plant.city}&appid={API_KEY}&units=metric&lang=ru",
+            timeout=5
+        ).json()
+
+        lat, lon = data['coord']['lat'], data['coord']['lon']
+        context.update({
+            "temperature": round(data['main']['temp'], 1),
+            "humidity": data['main']['humidity'],
+            "precipitation": data.get('rain', {}).get('1h', 0),
+            "weather_description": data['weather'][0]['description'],
+            "season": ["зима", "весна", "лето", "осень"][(timezone.now().month % 12) // 3],
+            "lat": lat, "lon": lon,
+            "map_url": f"https://static-maps.yandex.ru/1.x/?ll={lon},{lat}&z=10&l=map&pt={lon},{lat},pm2rdm&size=600,400",
+        })
+    except Exception as e:
+        print(f"Ошибка: {e}")
+        context.update({
+            "temperature": "—", "humidity": "—", "precipitation": "—",
+            "weather_description": "Нет данных", "season": "—",
+            "lat": 55.7558, "lon": 37.6173,
+            "map_url": "https://static-maps.yandex.ru/1.x/?ll=37.6173,55.7558&z=10&l=map&pt=37.6173,55.7558,pm2rdm&size=600,400",
+        })
+
+    return render(request, "plants/watering_detail.html", context)
