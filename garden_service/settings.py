@@ -10,7 +10,7 @@ DEBUG = os.getenv('DEBUG') == 'True'
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-ALLOWED_HOSTS = ['vxmpra.pythonanywhere.com', 'localhost']
+ALLOWED_HOSTS = ['vxmpra.pythonanywhere.com', 'localhost', '127.0.0.1',]
 
 
 INSTALLED_APPS = [
