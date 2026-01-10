@@ -14,7 +14,23 @@
         {% endif %}
     </div>
 
-    <div class="row">
+    {% if waterings %}
+    <div class="mt-4 mb-4">
+        <h6>История полива:</h6>
+        {% for watering in waterings|dictsortreversed:"date"|slice:":3" %}
+        <p class="mb-2 small">
+            {{ watering.date }}: <strong>{{ watering.water_amount }} л/м²</strong>
+            <span class="text-muted">- {{ watering.note|truncatechars:25 }}</span>
+        </p>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="alert alert-info mt-4 mb-4">
+        <small>Истории полива пока нет. Зайдите в рекомендации по поливу.</small>
+    </div>
+    {% endif %}
+
+    <div class="row mt-4">
         <div class="col-md-6 d-flex flex-column align-items-start mb-3">
             <a href="{% url 'watering_detail' plant.pk %}" class="btn btn-info btn-sm text-white">
                 Посмотреть рекомендации по поливу
@@ -28,7 +44,7 @@
         </div>
     </div>
 
-    <div class="mt-4 text-center">
+    <div class="mt-5 text-center">
         <a href="{% url 'plant_list' %}" class="btn btn-outline-success">Назад к моим растениям</a>
     </div>
 </div>

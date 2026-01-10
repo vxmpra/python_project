@@ -28,5 +28,14 @@
             </div>
         </div>
     </div>
+
+    {% if watering_note %}
+    <div class="mt-4 p-3 border rounded bg-light">
+        <h6>Рекомендация по поливу:</h6>
+        <p class="mb-1">{{ watering_note }}</p>
+        <p class="mb-0"><small>Количество воды: {{ water_per_sqm }} л/м²</small></p>
+    </div>
+    {% endif %}
+
 </div>
 {% endblock %}

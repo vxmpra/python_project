@@ -125,33 +125,93 @@ def protection_detail(request, pk):
 @login_required
 def watering_detail(request, pk):
     plant = get_object_or_404(Plant, pk=pk, owner=request.user)
-    API_KEY = os.environ.get('OPENWEATHER_API_KEY')
-
-    context = {"plant": plant, "map_url": ""}
 
     try:
         data = requests.get(
-            f"http://api.openweathermap.org/data/2.5/weather?q={plant.city}&appid={API_KEY}&units=metric&lang=ru",
+            f"https://api.openweathermap.org/data/2.5/weather?q={plant.city}&appid={os.environ.get('OPENWEATHER_API_KEY')}&units=metric&lang=ru",
             timeout=5
         ).json()
 
         lat, lon = data['coord']['lat'], data['coord']['lon']
-        context.update({
-            "temperature": round(data['main']['temp'], 1),
-            "humidity": data['main']['humidity'],
-            "precipitation": data.get('rain', {}).get('1h', 0),
+        temp = round(data['main']['temp'], 1)
+        hum = data['main']['humidity']
+        precip = data.get('rain', {}).get('1h', 0)
+
+        water, note = simple_watering(plant, temp, hum, precip)
+
+        today = timezone.now().date()
+
+        already_exists = WateringRecommendation.objects.filter(
+            plant=plant,
+            date=today
+        ).exists()
+
+        if not already_exists:
+            WateringRecommendation.objects.create(
+                plant=plant,
+                date=today,
+                water_amount=water,
+                note=note[:100]
+            )
+
+        return render(request, "plants/watering_detail.html", {
+            "plant": plant,
+            "temperature": temp,
+            "humidity": hum,
+            "precipitation": precip,
             "weather_description": data['weather'][0]['description'],
             "season": ["зима", "весна", "лето", "осень"][(timezone.now().month % 12) // 3],
-            "lat": lat, "lon": lon,
-            "map_url": f"https://static-maps.yandex.ru/1.x/?ll={lon},{lat}&z=10&l=map&pt={lon},{lat},pm2rdm&size=600,400",
-        })
-    except Exception as e:
-        print(f"Ошибка: {e}")
-        context.update({
-            "temperature": "—", "humidity": "—", "precipitation": "—",
-            "weather_description": "Нет данных", "season": "—",
-            "lat": 55.7558, "lon": 37.6173,
-            "map_url": "https://static-maps.yandex.ru/1.x/?ll=37.6173,55.7558&z=10&l=map&pt=37.6173,55.7558,pm2rdm&size=600,400",
+            "map_url": f"https://static-maps.yandex.ru/1.x/?ll={lon},{lat}&z=10&l=map&size=600,400",
+            "water_per_sqm": water,
+            "watering_note": note,
         })
 
-    return render(request, "plants/watering_detail.html", context)
+    except:
+        return render(request, "plants/watering_detail.html", {
+            "plant": plant,
+            "map_url": "https://static-maps.yandex.ru/1.x/?ll=37.6173,55.7558&z=10&l=map&size=600,400",
+            "watering_note": "Нет данных",
+        })
+
+# Расчет полива (по факторам: тип растения, температура, влажность, осадки)
+def simple_watering(plant, temp, hum, precip):
+
+    # запреты на полив
+    if temp < 5:
+        return 0, f"Слишком холодно ({temp}°C) - полив не требуется"
+    if precip > 5:
+        return 0, f"Сильный дождь ({precip} мм) - полив не нужен"
+
+    # тип растения
+    base_norms = {
+        "Овощ": 2.0,
+        "Зелень": 1.5,
+        "Дерево": 5.0,
+        "Цветок": 0.5,
+    }
+    base = base_norms.get(plant.plant_type.name, 1.0)
+
+    # температура: чем жарче тем больше полив
+    tf = 1.5 if temp > 30 else 1.3 if temp > 25 else 0.7 if temp < 15 else 1.0
+
+    # влажность: чем суше тем больше полив
+    hf = 0.7 if hum > 70 else 1.3 if hum < 30 else 1.0
+
+    # осадки: дождь уменьшает полив
+    rf = 0.3 if precip > 2 else 0.7 if precip > 0 else 1.0
+
+    # расчет
+    water = round(max(0.1, base * tf * hf * rf), 1)
+
+
+    # рекомендации
+    if temp > 30:
+        note = f"Жарко: требуется {water} л/м² (полив увеличен)"
+    elif temp < 15:
+        note = f"Прохладно: требуется {water} л/м² (полив уменьшен)"
+    elif precip > 0:
+        note = f"Дождь: требуется {water} л/м² (полив уменьшен)"
+    else:
+        note = f"Нормально: требуется {water} л/м² (стандартный полив)"
+
+    return water, note
