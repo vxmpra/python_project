@@ -42,7 +42,7 @@ class WateringRecommendation(models.Model):
     note = models.TextField(blank=True)
 
     def __str__(self):
-        return f"{self.plant.name} - {self.date}"
+        return f"{self.plant.plant_type.name} - {self.date}"
 
 
 """ Модель рекомендаций по защите растения """
@@ -62,6 +62,7 @@ class Weather(models.Model):
     temperature = models.FloatField(help_text="Температура в °C")
     humidity = models.FloatField(help_text="Влажность в %")
     precipitation = models.FloatField(help_text="Осадки в мм")
+    description = models.CharField(max_length=100, blank=True)
 
     def __str__(self):
         return f"{self.city} - {self.date}"

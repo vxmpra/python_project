@@ -3,7 +3,7 @@ import requests
 from django.utils import timezone
 from django.shortcuts import render, get_object_or_404, redirect
 from django.db.models import Count
-from .models import Plant, WateringRecommendation, ProtectionAdvice, PlantType, PlantCategory
+from .models import Plant, WateringRecommendation, ProtectionAdvice, PlantType, PlantCategory, Weather
 from .forms import PlantForm
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.forms import UserCreationForm
@@ -125,53 +125,96 @@ def protection_detail(request, pk):
 @login_required
 def watering_detail(request, pk):
     plant = get_object_or_404(Plant, pk=pk, owner=request.user)
+    today = timezone.now().date()
 
-    try:
-        data = requests.get(
-            f"https://api.openweathermap.org/data/2.5/weather?q={plant.city}&appid={os.environ.get('OPENWEATHER_API_KEY')}&units=metric&lang=ru",
-            timeout=5
-        ).json()
+    # Пытаемся получить данные из кэша
+    cached_weather = Weather.objects.filter(city=plant.city, date=today).first()
 
-        lat, lon = data['coord']['lat'], data['coord']['lon']
-        temp = round(data['main']['temp'], 1)
-        hum = data['main']['humidity']
-        precip = data.get('rain', {}).get('1h', 0)
+    # Координаты по умолчанию
+    lat, lon = 55.7558, 37.6173
 
-        water, note = simple_watering(plant, temp, hum, precip)
+    if cached_weather:
+        temp = cached_weather.temperature
+        hum = cached_weather.humidity
+        precip = cached_weather.precipitation
+        weather_description = cached_weather.description or "Ясная погода"
 
-        today = timezone.now().date()
+        # Пытаемся получить координаты для карты
+        try:
+            coord_data = requests.get(
+                f"https://api.openweathermap.org/geo/1.0/direct?q={plant.city}&limit=1&appid={os.environ.get('OPENWEATHER_API_KEY')}",
+                timeout=2
+            ).json()
+            if coord_data:
+                lat, lon = coord_data[0]['lat'], coord_data[0]['lon']
+        except:
+            pass
+    else:
+        # Нет кэша, запрашиваем данные у API
+        try:
+            data = requests.get(
+                f"https://api.openweathermap.org/data/2.5/weather?q={plant.city}&appid={os.environ.get('OPENWEATHER_API_KEY')}&units=metric&lang=ru",
+                timeout=5
+            ).json()
 
-        already_exists = WateringRecommendation.objects.filter(
-            plant=plant,
-            date=today
-        ).exists()
+            lat, lon = data['coord']['lat'], data['coord']['lon']
+            temp = round(data['main']['temp'], 1)
+            hum = data['main']['humidity']
+            precip = data.get('rain', {}).get('1h', 0) or data.get('snow', {}).get('1h', 0) or 0
+            weather_description = data['weather'][0]['description']
 
-        if not already_exists:
-            WateringRecommendation.objects.create(
-                plant=plant,
+            # Сохраняем ВСЕ данные в кэш
+            Weather.objects.create(
+                city=plant.city,
                 date=today,
-                water_amount=water,
-                note=note[:100]
+                temperature=temp,
+                humidity=hum,
+                precipitation=precip,
+                description=weather_description
             )
 
-        return render(request, "plants/watering_detail.html", {
-            "plant": plant,
-            "temperature": temp,
-            "humidity": hum,
-            "precipitation": precip,
-            "weather_description": data['weather'][0]['description'],
-            "season": ["зима", "весна", "лето", "осень"][(timezone.now().month % 12) // 3],
-            "map_url": f"https://static-maps.yandex.ru/1.x/?ll={lon},{lat}&z=10&l=map&size=600,400",
-            "water_per_sqm": water,
-            "watering_note": note,
-        })
+        except Exception as e:
+            print(f"Ошибка получения погоды: {e}")
+            # Пробуем взять последние данные из архива
+            last_weather = Weather.objects.filter(city=plant.city).order_by('-date').first()
+            if last_weather:
+                temp = last_weather.temperature
+                hum = last_weather.humidity
+                precip = last_weather.precipitation
+                weather_description = last_weather.description or "Ясная погода"
+            else:
+                return render(request, "plants/watering_detail.html", {
+                    "plant": plant,
+                    "map_url": f"https://static-maps.yandex.ru/1.x/?ll={lon},{lat}&z=10&l=map&size=600,400",
+                    "watering_note": "Не удалось получить данные о погоде",
+                })
 
-    except:
-        return render(request, "plants/watering_detail.html", {
-            "plant": plant,
-            "map_url": "https://static-maps.yandex.ru/1.x/?ll=37.6173,55.7558&z=10&l=map&size=600,400",
-            "watering_note": "Нет данных",
-        })
+    water, note = simple_watering(plant, temp, hum, precip)
+
+    already_exists = WateringRecommendation.objects.filter(
+        plant=plant,
+        date=today
+    ).exists()
+
+    if not already_exists:
+        WateringRecommendation.objects.create(
+            plant=plant,
+            date=today,
+            water_amount=water,
+            note=note[:100]
+        )
+
+    return render(request, "plants/watering_detail.html", {
+        "plant": plant,
+        "temperature": temp,
+        "humidity": hum,
+        "precipitation": precip,
+        "weather_description": weather_description,
+        "season": ["зима", "весна", "лето", "осень"][(timezone.now().month % 12) // 3],
+        "map_url": f"https://static-maps.yandex.ru/1.x/?ll={lon},{lat}&z=10&l=map&size=600,400",
+        "water_per_sqm": water,
+        "watering_note": note,
+    })
 
 # Расчет полива (по факторам: тип растения, температура, влажность, осадки)
 def simple_watering(plant, temp, hum, precip):
