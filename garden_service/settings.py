@@ -10,7 +10,10 @@ DEBUG = os.getenv('DEBUG') == 'True'
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['your-project-name.onrender.com']
+INSTALLED_APPS = [
+    'django.contrib.admin',
+]
 
 
 # Application definition
