@@ -127,10 +127,9 @@ def watering_detail(request, pk):
     plant = get_object_or_404(Plant, pk=pk, owner=request.user)
     today = timezone.now().date()
 
-    # Пытаемся получить данные из кэша
+    # данные из кэша
     cached_weather = Weather.objects.filter(city=plant.city, date=today).first()
 
-    # Координаты по умолчанию
     lat, lon = 55.7558, 37.6173
 
     if cached_weather:
@@ -139,7 +138,7 @@ def watering_detail(request, pk):
         precip = cached_weather.precipitation
         weather_description = cached_weather.description or "Ясная погода"
 
-        # Пытаемся получить координаты для карты
+        # координаты для карты
         try:
             coord_data = requests.get(
                 f"https://api.openweathermap.org/geo/1.0/direct?q={plant.city}&limit=1&appid={os.environ.get('OPENWEATHER_API_KEY')}",
@@ -150,7 +149,7 @@ def watering_detail(request, pk):
         except:
             pass
     else:
-        # Нет кэша, запрашиваем данные у API
+        # если нет кэша, запрашиваем данные у API
         try:
             data = requests.get(
                 f"https://api.openweathermap.org/data/2.5/weather?q={plant.city}&appid={os.environ.get('OPENWEATHER_API_KEY')}&units=metric&lang=ru",
@@ -163,7 +162,7 @@ def watering_detail(request, pk):
             precip = data.get('rain', {}).get('1h', 0) or data.get('snow', {}).get('1h', 0) or 0
             weather_description = data['weather'][0]['description']
 
-            # Сохраняем ВСЕ данные в кэш
+            # сохраняем все данные в кэш
             Weather.objects.create(
                 city=plant.city,
                 date=today,
@@ -175,7 +174,6 @@ def watering_detail(request, pk):
 
         except Exception as e:
             print(f"Ошибка получения погоды: {e}")
-            # Пробуем взять последние данные из архива
             last_weather = Weather.objects.filter(city=plant.city).order_by('-date').first()
             if last_weather:
                 temp = last_weather.temperature
