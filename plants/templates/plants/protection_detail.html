@@ -1,39 +1,55 @@
 {% extends 'layout.html' %}
 
-{% block title %}Рекомендации по защите{% endblock %}
+{% block title %}Защита {{ plant.plant_type.name }}{% endblock %}
 
 {% block content %}
 <div class="container mt-4">
-    <h2 class="text-success mb-4">
-        🛡️ Защита: {{ plant.plant_type.name }}
-        <small class="text-muted">({{ plant.city }})</small>
+    <h2 class="text-success mb-3">
+        <i class="bi bi-shield-check"></i>
+        Защита {{ plant.plant_type.name }}
     </h2>
 
-    <div class="mb-3">
-        <a href="{% url 'plant_detail' plant.pk %}" class="btn btn-outline-success">
-            Назад к растению
+    <div class="mb-4">
+        <a href="{% url 'plant_detail' plant.pk %}" class="btn btn-outline-secondary">
+            ← Назад к растению
         </a>
     </div>
 
     {% if protection_list %}
-    <table class="table table-striped table-bordered mt-3">
-        <thead class="table-success">
-            <tr>
-                <th>Вредитель/Болезнь</th>
-                <th>Рекомендация</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for advice in protection_list %}
-            <tr>
-                <td>{{ advice.pest_or_disease }}</td>
-                <td>{{ advice.recommendation }}</td>
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
+    <div class="row">
+        {% for advice in protection_list %}
+        <div class="col-md-6 mb-3">
+            <div class="card h-100 border-{% cycle 'danger' 'warning' 'info' as card_color %}">
+                <div class="card-header bg-{{ card_color }} text-white">
+                    <h5 class="mb-0">
+                        <i class="bi bi-{% cycle 'bug' 'virus' 'exclamation-triangle' %} me-2"></i>
+                        {{ advice.pest_or_disease }}
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <p class="card-text">{{ advice.recommendation }}</p>
+                </div>
+                <div class="card-footer text-muted small">
+                    Рекомендация №{{ forloop.counter }}
+                </div>
+            </div>
+        </div>
+
+        {% if forloop.counter|divisibleby:2 %}
+    </div>
+    <div class="row">
+        {% endif %}
+
+        {% endfor %}
+    </div>
+
+    <p class="text-muted mt-3">
+        Всего рекомендаций: {{ protection_list|length }}
+    </p>
     {% else %}
-    <p class="text-muted mt-3">Для этого растения пока нет рекомендаций по защите.</p>
+    <div class="alert alert-warning mt-3">
+        Для этого типа растений пока нет рекомендаций по защите.
+    </div>
     {% endif %}
 </div>
 {% endblock %}
