@@ -31,6 +31,6 @@ class ProtectionAdviceAdmin(admin.ModelAdmin):
 
 @admin.register(Weather)
 class WeatherAdmin(admin.ModelAdmin):
-    list_display = ('city', 'date', 'temperature', 'humidity', 'precipitation')
+    list_display = ('city', 'date', 'temperature', 'humidity', 'precipitation', 'description')
     list_filter = ('city', 'date')
-    search_fields = ('city',)
+    search_fields = ('city', 'description')
