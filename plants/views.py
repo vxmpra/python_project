@@ -47,38 +47,35 @@ def logout_view(request):
 
 # Главная страница (для гостей)
 def home(request):
-    plant_types = PlantType.objects.all().select_related('category')
+    plant_types = PlantType.objects.select_related('category').only('name', 'category__name').order_by('name')[:30]
+
+    stats = PlantType.objects.aggregate(
+        total_plants=Count('id'),
+        total_categories=Count('category', distinct=True)
+    )
 
     return render(request, "plants/base.html", {
         "plant_types": plant_types,
-        "total_plants": PlantType.objects.count(),
-        "total_categories": PlantCategory.objects.count(),
+        "total_plants": stats['total_plants'],
+        "total_categories": stats['total_categories'],
     })
 
 # Список всех растений пользователя
 @login_required
 def plant_list(request):
-    plants = Plant.objects.filter(owner=request.user).select_related(
-        'plant_type',
-        'plant_type__category'
-    )
+    plants = Plant.objects.filter(owner=request.user).select_related('plant_type__category'
+    ).order_by('plant_type__category__name', 'plant_type__name')
+
     plant_count = plants.count()
 
-    plants_by_category_dict = {}
-    for plant in plants:
-        category_name = plant.plant_type.category.name
-        if category_name not in plants_by_category_dict:
-            plants_by_category_dict[category_name] = []
-        plants_by_category_dict[category_name].append(plant)
-
-    plants_by_category = plants.values('plant_type__category__name').annotate(category_count=Count('id'))
+    plants_by_category = plants.values('plant_type__category__name').annotate(category_count=Count('id')).order_by('plant_type__category__name')
 
     return render(request, 'plants/plant_list.html', {
         'plants': plants,
         'plant_count': plant_count,
         'plants_by_category': plants_by_category,
-        'plants_by_category_dict': plants_by_category_dict,
     })
+
 
 # Детали растения
 @login_required
