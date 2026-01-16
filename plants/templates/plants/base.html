@@ -4,13 +4,15 @@
 
 {% block content %}
 <div class="container mt-5 text-center">
-    <h1 class="text-success mb-4">🌿 Garden Web Service</h1>
+    <h1 class="text-success mb-4">Garden Web Service</h1>
     <p class="lead">Помогаем ухаживать за растениями и получать советы по поливу и защите!</p>
 
-    <div class="d-flex justify-content-center gap-3 mb-4">
-        <a href="{% url 'register' %}" class="btn btn-success">Регистрация</a>
-        <a href="{% url 'login' %}" class="btn btn-outline-success">Вход</a>
-    </div>
+    {% if user.is_authenticated %}
+        <div class="alert alert-success mb-4">
+            <h5>С возвращением, {{ user.username }}!</h5>
+            <p class="mb-0">Перейдите в <a href="{% url 'plant_list' %}" class="alert-link">Мои растения</a> для работы с вашим садом.</p>
+        </div>
+    {% endif %}
 
     <div class="alert alert-light border mb-4">
         <p class="mb-0">
