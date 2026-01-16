@@ -3,41 +3,23 @@
 {% block title %}Мои растения{% endblock %}
 
 {% block content %}
-<nav class="navbar navbar-light bg-white shadow-sm mb-4">
-    <div class="container-fluid d-flex justify-content-between align-items-center">
-        <div>
-            🌿 Добро пожаловать, {{ request.user.username }}!
-        </div>
-        <div class="d-flex gap-2">
-            <a href="{% url 'add_plant' %}" class="btn btn-success btn-sm">Добавить растение</a>
-            {% if request.user.is_superuser %}
-            <a href="{% url 'admin:index' %}" class="btn btn-danger btn-sm">Админка</a>
-            {% endif %}
-            <a href="{% url 'logout' %}" class="btn btn-outline-danger btn-sm">Выход</a>
-        </div>
-    </div>
-</nav>
-
 <div class="container">
     <h2 class="text-center text-success mb-4">Мой сад ({{ plant_count }} растений)</h2>
-
-
-    {% if plants_by_category %}
-    <div class="mb-4">
-        <p class="mb-2"><strong>Растения по категориям:</strong></p>
-        <div class="d-flex flex-wrap gap-2 mb-3">
-            {% for category in plants_by_category %}
-            <span class="badge bg-success">
-                {{ category.plant_type__category__name }}: {{ category.category_count }}
-            </span>
-            {% endfor %}
-        </div>
-    </div>
-    {% endif %}
 
     {% regroup plants by plant_type.category.name as categories %}
 
     {% if categories %}
+        <div class="mb-4">
+            <p class="mb-2"><strong>Растения по категориям:</strong></p>
+            <div class="d-flex flex-wrap gap-2 mb-3">
+                {% for category in categories %}
+                <span class="badge bg-success">
+                    {{ category.grouper }}: {{ category.list|length }}
+                </span>
+                {% endfor %}
+            </div>
+        </div>
+
         {% for category in categories %}
         <div class="category-group mb-5">
             <h4 class="text-success mb-3">
@@ -68,7 +50,6 @@
     {% else %}
         <div class="text-center py-5">
             <p class="fs-5 text-muted mb-3">🌱 У вас пока нет растений</p>
-            <a href="{% url 'add_plant' %}" class="btn btn-success btn-lg">Добавить первое растение</a>
         </div>
     {% endif %}
 </div>
