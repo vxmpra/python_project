@@ -2,7 +2,8 @@ from django.shortcuts import render, get_object_or_404, redirect
 from django.utils import timezone
 from django.db.models import Count
 from django.contrib.auth.decorators import login_required
-from django.contrib.auth import authenticate, login, logout
+from django.contrib.auth import login, logout
+from django.contrib.auth.forms import AuthenticationForm
 from django.contrib.auth.forms import UserCreationForm
 from .models import Plant, WateringRecommendation, ProtectionAdvice, PlantType
 from .forms import PlantForm
@@ -30,15 +31,16 @@ def login_view(request):
         return redirect('plant_list')
 
     if request.method == "POST":
-        username = request.POST.get("username")
-        password = request.POST.get("password")
-        user = authenticate(request, username=username, password=password)
+        form = AuthenticationForm(request, data=request.POST)
 
-        if user:
+        if form.is_valid():
+            user = form.get_user()
             login(request, user)
             return redirect('plant_list')
+    else:
+        form = AuthenticationForm()
 
-    return render(request, "registration/login.html")
+    return render(request, "registration/login.html", {'form': form})
 
 
 # Выход
