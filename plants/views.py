@@ -199,7 +199,7 @@ def watering_detail(request, pk):
         "precipitation": weather_data['precipitation'],
         "weather_description": weather_data['description'],
         "season": season,
-        "map_url": f"https://static-maps.yandex.ru/1.x/?ll={weather_data['lon']},{weather_data['lat']}&z=10&l=map&size=600,400",
+        "map_url": f"https://static-maps.yandex.ru/1.x/?ll={weather_data['lon']},{weather_data['lat']}&z=10&l=map&size=450,300",
         "water_per_sqm": water,
         "watering_note": note,
     })
