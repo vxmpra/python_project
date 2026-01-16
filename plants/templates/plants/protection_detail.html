@@ -1,19 +1,14 @@
 {% extends 'layout.html' %}
 
-{% block title %}Защита {{ plant.plant_type.name }}{% endblock %}
+{% block title %}Защита для {{ plant.plant_type.name }}{% endblock %}
 
 {% block content %}
 <div class="container mt-4">
-    <h2 class="text-success mb-3">
-        <i class="bi bi-shield-check"></i>
-        Защита {{ plant.plant_type.name }}
-    </h2>
+    <h2>Защита {{ plant.plant_type.name }} от вредителей</h2>
 
-    <div class="mb-4">
-        <a href="{% url 'plant_detail' plant.pk %}" class="btn btn-outline-secondary">
-            ← Назад к растению
-        </a>
-    </div>
+    <a href="{% url 'plant_detail' plant.id %}" class="btn btn-outline-secondary mb-3">
+        ← Вернуться к растению
+    </a>
 
     {% if protection_list %}
     <div class="row">
@@ -21,16 +16,13 @@
         <div class="col-md-6 mb-3">
             <div class="card h-100 border-{% cycle 'danger' 'warning' 'info' as card_color %}">
                 <div class="card-header bg-{{ card_color }} text-white">
-                    <h5 class="mb-0">
-                        <i class="bi bi-{% cycle 'bug' 'virus' 'exclamation-triangle' %} me-2"></i>
-                        {{ advice.pest_or_disease }}
-                    </h5>
+                    <h5 class="mb-0">{{ advice.pest_or_disease }}</h5>
                 </div>
                 <div class="card-body">
-                    <p class="card-text">{{ advice.recommendation }}</p>
+                    <p>{{ advice.recommendation }}</p>
                 </div>
                 <div class="card-footer text-muted small">
-                    Рекомендация №{{ forloop.counter }}
+                    Рекомендация {{ forloop.counter }}
                 </div>
             </div>
         </div>
