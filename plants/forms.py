@@ -1,7 +1,6 @@
-import requests
-import os
 from django import forms
 from .models import Plant, PlantType
+from .utils import validate_city_name
 
 
 class PlantForm(forms.ModelForm):
@@ -24,14 +23,17 @@ class PlantForm(forms.ModelForm):
         city = cleaned_data.get('city')
 
         if self.user and plant_type and city:
+            # убираем пробелы
             city_normalized = city.strip()
 
+            # проверка нет ли уже такого же растения у пользователя
             duplicate = Plant.objects.filter(
                 owner=self.user,
                 plant_type=plant_type,
                 city__iexact=city_normalized
             ).exists()
 
+            # если есть - ошибка
             if duplicate:
                 raise forms.ValidationError(
                     f'У вас уже есть в каталоге "{plant_type.name}" в городе {city_normalized}'
@@ -45,18 +47,10 @@ class PlantForm(forms.ModelForm):
         if not city:
             raise forms.ValidationError("Введите название города")
 
-        API_KEY = os.environ.get('OPENWEATHER_API_KEY')
-        if not API_KEY:
-            return city
+        # проверка города
+        normalized_city = validate_city_name(city)
 
-        url = f"http://api.openweathermap.org/data/2.5/weather?q={city}&appid={API_KEY}&lang=ru"
+        if not normalized_city:
+            raise forms.ValidationError(f"Город '{city}' не найден или недоступен")
 
-        try:
-            response = requests.get(url, timeout=3)
-            if response.status_code == 200:
-                data = response.json()
-                return data['name']
-            else:
-                raise forms.ValidationError(f"Город '{city}' не найден")
-        except:
-            raise forms.ValidationError("Не удалось найти город")
+        return normalized_city
