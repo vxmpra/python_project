@@ -1,47 +1,40 @@
 {% extends 'layout.html' %}
 
-{% block title %}Защита для {{ plant.plant_type.name }}{% endblock %}
+{% block title %}Защита {{ plant.plant_type.name }}{% endblock %}
 
 {% block content %}
 <div class="container mt-4">
-    <h2>Защита {{ plant.plant_type.name }} от вредителей</h2>
 
-    <a href="{% url 'plant_detail' plant.id %}" class="btn btn-outline-secondary mb-3">
-        ← Вернуться к растению
+    <a href="{% url 'plant_detail' plant.id %}" class="btn btn-outline-secondary btn-sm mb-4">
+        ← Назад к растению
     </a>
 
     {% if protection_list %}
-    <div class="row">
-        {% for advice in protection_list %}
-        <div class="col-md-6 mb-3">
-            <div class="card h-100 border-{% cycle 'danger' 'warning' 'info' as card_color %}">
-                <div class="card-header bg-{{ card_color }} text-white">
-                    <h5 class="mb-0">{{ advice.pest_or_disease }}</h5>
-                </div>
-                <div class="card-body">
-                    <p>{{ advice.recommendation }}</p>
-                </div>
-                <div class="card-footer text-muted small">
-                    Рекомендация {{ forloop.counter }}
+
+    <h4 class="text-success mb-4">Советы для {{ plant.plant_type.name }}</h4>
+
+    {% for advice in protection_list %}
+    <div class="card mb-3 border-success">
+        <div class="card-body py-3">
+            <div class="d-flex align-items-start">
+                <span class="badge bg-success me-3 fs-6 p-2">{{ forloop.counter }}</span>
+
+                <div>
+                    <strong class="d-block fs-5 mb-2">{{ advice.pest_or_disease }}</strong>
+                    <span class="fs-6">{{ advice.recommendation }}</span>
                 </div>
             </div>
         </div>
-
-        {% if forloop.counter|divisibleby:2 %}
     </div>
-    <div class="row">
-        {% endif %}
+    {% endfor %}
 
-        {% endfor %}
-    </div>
-
-    <p class="text-muted mt-3">
-        Всего рекомендаций: {{ protection_list|length }}
-    </p>
     {% else %}
-    <div class="alert alert-warning mt-3">
-        Для этого типа растений пока нет рекомендаций по защите.
+
+    <div class="alert alert-light text-center py-5">
+        <p class="fs-5 mb-0 text-muted">Нет рекомендаций по защите</p>
     </div>
+
     {% endif %}
+
 </div>
 {% endblock %}
