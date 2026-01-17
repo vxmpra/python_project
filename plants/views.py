@@ -9,6 +9,7 @@ from .models import Plant, WateringRecommendation, ProtectionAdvice, PlantType
 from .forms import PlantForm
 from .utils import simple_watering, get_weather_data
 
+from django.contrib import messages
 
 # Регистрация
 def register_view(request):
@@ -47,6 +48,17 @@ def login_view(request):
 def logout_view(request):
     logout(request)
     return redirect('home')
+
+
+# Удаление растения
+@login_required
+def delete_plant(request, pk):
+    plant = get_object_or_404(Plant, pk=pk, owner=request.user)
+
+    if request.method == 'POST':
+        plant.delete()
+
+    return redirect('plant_list')
 
 
 # Главная страница (для гостей)
