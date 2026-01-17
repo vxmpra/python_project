@@ -9,7 +9,6 @@ from .models import Plant, WateringRecommendation, ProtectionAdvice, PlantType
 from .forms import PlantForm
 from .utils import simple_watering, get_weather_data
 
-from django.contrib import messages
 
 # Регистрация
 def register_view(request):
