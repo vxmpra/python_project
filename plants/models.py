@@ -24,6 +24,12 @@ class PlantType(models.Model):
         verbose_name="Категория"
     )
     description = models.TextField(blank=True, verbose_name="Описание")
+    image = models.ImageField(
+        upload_to='plant_types/',
+        blank=True,
+        null=True,
+        verbose_name="Фото растения"
+    )
 
     class Meta:
         verbose_name = "Тип растения"

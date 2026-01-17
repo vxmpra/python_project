@@ -10,9 +10,17 @@ class PlantCategoryAdmin(admin.ModelAdmin):
 
 @admin.register(PlantType)
 class PlantTypeAdmin(admin.ModelAdmin):
-    list_display = ('name', 'category')
+    list_display = ('name', 'category', 'image_tag')
     list_filter = ('category',)
     search_fields = ('name', 'description')
+
+    def image_tag(self, obj):
+        if obj.image:
+            return f'<img src="{obj.image.url}" width="50" />'
+        return '-'
+
+    image_tag.allow_tags = True
+    image_tag.short_description = 'Фото'
 
 
 @admin.register(Plant)

@@ -8,15 +8,15 @@
 </head>
 <body class="bg-light">
 
-<nav class="navbar navbar-light bg-white shadow-sm">
+<nav class="navbar navbar-expand-lg navbar-dark" style="background-color: #2e8b57;">
     <div class="container">
         <div class="d-flex align-items-center">
-            <a class="navbar-brand me-3" href="{% url 'home' %}" title="Вернуться на главную">
-                🌿 <strong>Garden Web</strong>
+            <a class="navbar-brand me-3 fw-bold" href="{% url 'home' %}" title="Вернуться на главную">
+                🌿 <span class="text-white">Garden Web</span>
             </a>
 
             {% if user.is_authenticated %}
-                <span class="text-muted small">
+                <span class="text-light small ms-2">
                     Добро пожаловать, {{ user.username }}!
                 </span>
             {% endif %}
@@ -24,22 +24,26 @@
 
         <div class="navbar-nav ms-auto flex-row gap-3 align-items-center">
             {% if user.is_authenticated %}
-                <a class="nav-link" href="{% url 'plant_list' %}">Мои растения</a>
-
                 {% if request.resolver_match.url_name == 'plant_list' %}
-                    <a class="nav-link fw-semibold" href="{% url 'add_plant' %}">
-                        Добавить растение +
+                    <a class="nav-link fw-semibold text-white"
+                       href="{% url 'add_plant' %}"
+                       style="background-color: rgba(255,255,255,0.2); padding: 5px 12px; border-radius: 20px;">
+                        + Добавить растение
                     </a>
                 {% endif %}
 
-                <a class="nav-link text-danger" href="{% url 'logout' %}">
-                    Выйти
+                <a class="nav-link text-white" href="{% url 'plant_list' %}">
+                    Мои растения
+                </a>
+
+                <a class="nav-link text-white" href="{% url 'logout' %}" style="opacity: 0.9;">
+                    <small>Выйти</small>
                 </a>
 
             {% else %}
                 {% if request.resolver_match.url_name != 'login' and request.resolver_match.url_name != 'register' %}
-                    <a class="nav-link" href="{% url 'login' %}">Войти</a>
-                    <a class="nav-link" href="{% url 'register' %}">Регистрация</a>
+                    <a class="nav-link text-white" href="{% url 'login' %}">Войти</a>
+                    <a class="nav-link text-white" href="{% url 'register' %}">Регистрация</a>
                 {% endif %}
             {% endif %}
         </div>

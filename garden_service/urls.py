@@ -1,3 +1,5 @@
+from django.conf import settings
+from django.conf.urls.static import static
 from django.contrib import admin
 from plants import views
 from plants.views import home
@@ -14,3 +16,7 @@ urlpatterns = [
     path('register/', views.register_view, name='register'),
     path('login/', auth_views.LoginView.as_view(template_name='registration/login.html', next_page='plant_list'), name='login'),
 ]
+
+
+if settings.DEBUG:
+    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

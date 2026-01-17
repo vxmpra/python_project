@@ -33,6 +33,12 @@
                 {% for plant in category.list %}
                 <div class="col-md-3 mb-4">
                     <div class="card shadow-sm h-100">
+                        {% if plant.plant_type.image %}
+                        <img src="{{ plant.plant_type.image.url }}"
+                             class="card-img-top"
+                             alt="{{ plant.plant_type.name }}"
+                             style="height:150px; object-fit:cover;">
+                        {% endif %}
                         <div class="card-body d-flex flex-column">
                             <h5 class="card-title text-success">
                                 {{ plant.plant_type.name }}
