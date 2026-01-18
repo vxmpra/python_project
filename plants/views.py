@@ -3,22 +3,20 @@ from django.utils import timezone
 from django.db.models import Count
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth import login, logout
-from django.contrib.auth.forms import AuthenticationForm
-from django.contrib.auth.forms import UserCreationForm
+from django.contrib.auth.forms import AuthenticationForm, UserCreationForm
+
 from .models import Plant, WateringRecommendation, ProtectionAdvice, PlantType
 from .forms import PlantForm
-from .utils import simple_watering, get_weather_data
+from .utils import simple_watering, get_weather_data, get_5day_forecast
 
 
 # Регистрация
 def register_view(request):
-
     if request.method == "POST":
         form = UserCreationForm(request.POST)
         if form.is_valid():
             form.save()
             return redirect('login')
-
     else:
         form = UserCreationForm()
 
@@ -32,7 +30,6 @@ def login_view(request):
 
     if request.method == "POST":
         form = AuthenticationForm(request, data=request.POST)
-
         if form.is_valid():
             user = form.get_user()
             login(request, user)
@@ -56,13 +53,16 @@ def delete_plant(request, pk):
 
     if request.method == 'POST':
         plant.delete()
+        return redirect('plant_list')
 
     return redirect('plant_list')
 
 
 # Главная страница (для гостей)
 def home(request):
-    plant_types = PlantType.objects.select_related('category').only('name', 'category__name').order_by('name')[:30]
+    plant_types = PlantType.objects.select_related('category').only(
+        'name', 'category__name'
+    ).order_by('name')[:30]
 
     stats = PlantType.objects.aggregate(
         total_plants=Count('id'),
@@ -158,6 +158,7 @@ def protection_detail(request, pk):
         "protection_list": protection_list
     })
 
+
 # Рекомендации по поливу
 @login_required
 def watering_detail(request, pk):
@@ -169,17 +170,22 @@ def watering_detail(request, pk):
 
     today = timezone.now().date()
 
-    # Получение данных о погоде
+    # Текущая погода
     weather_data = get_weather_data(plant.city)
 
     if not weather_data.get('has_data', False):
-        context = {
+        return render(request, "plants/watering_detail.html", {
             "plant": plant,
             "error": "Не удалось получить данные о погоде. Попробуйте позже."
-        }
-        return render(request, "plants/watering_detail.html", context)
+        })
 
-    # # Расчет нормы полива на основе погодных условий и характеристик растения
+    # Определение сезона
+    month = timezone.now().month
+    season_number = (month % 12) // 3
+    seasons = ["зима", "весна", "лето", "осень"]
+    season_name = seasons[season_number]
+
+    # Текущая рекомендация
     water, note = simple_watering(
         plant,
         weather_data['temperature'],
@@ -187,13 +193,12 @@ def watering_detail(request, pk):
         weather_data['precipitation']
     )
 
-    # Рекомендация
+    # Сохранение рекомендации в БД, если её еще нет
     if weather_data['temperature'] is not None:
         exists = WateringRecommendation.objects.filter(
             plant=plant,
             date=today
         ).exists()
-
         if not exists:
             WateringRecommendation.objects.create(
                 plant=plant,
@@ -202,8 +207,21 @@ def watering_detail(request, pk):
                 note=note[:100]
             )
 
-    #  # Определение текущего сезона на основе месяца
-    season = ["зима", "весна", "лето", "осень"][(timezone.now().month % 12) // 3]
+    # 5-дневный прогноз
+    forecast_data = get_5day_forecast(plant.city)
+    forecast = []
+
+    for day in forecast_data:
+        water_forecast, recommendation = simple_watering(
+            plant,
+            day['avg_temp'],
+            50,
+            day['total_rain']
+        )
+
+        day['water_amount'] = water_forecast
+        day['recommendation'] = recommendation
+        forecast.append(day)
 
     return render(request, "plants/watering_detail.html", {
         "plant": plant,
@@ -211,9 +229,10 @@ def watering_detail(request, pk):
         "humidity": weather_data['humidity'],
         "precipitation": weather_data['precipitation'],
         "weather_description": weather_data['description'],
-        "season": season,
+        "season": season_name,
         "lat": weather_data['lat'],
         "lon": weather_data['lon'],
         "water_per_sqm": water,
         "watering_note": note,
+        "forecast": forecast,
     })

@@ -1,5 +1,4 @@
 {% extends 'layout.html' %}
-{% load static %}
 
 {% block title %}Полив {{ plant.plant_type.name }}{% endblock %}
 
@@ -12,9 +11,7 @@
     </a>
 
     {% if error %}
-    <div class="alert alert-warning">
-        {{ error }}
-    </div>
+    <div class="alert alert-warning">{{ error }}</div>
     {% endif %}
 
     <div class="row">
@@ -50,29 +47,82 @@
         </div>
     </div>
     {% endif %}
+
+    {% if forecast %}
+    <div class="card mt-4">
+        <div class="card-body text-center">
+            <h5>Прогноз полива на 5 дней</h5>
+            <div style="height: 300px; width: 600px; margin: 0 auto;">
+                <canvas id="forecastChart"></canvas>
+            </div>
+        </div>
+    </div>
+    {% endif %}
 </div>
 
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
 <script>
 document.addEventListener("DOMContentLoaded", function() {
     var lat = parseFloat("{{ lat|floatformat:6 }}".replace(',', '.'));
     var lon = parseFloat("{{ lon|floatformat:6 }}".replace(',', '.'));
-
     if (!isNaN(lat) && !isNaN(lon)) {
         var map = L.map('map').setView([lat, lon], 10);
-
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
             attribution: '&copy; OpenStreetMap contributors'
         }).addTo(map);
-
         L.marker([lat, lon]).addTo(map)
           .bindPopup('{{ plant.city }}')
           .openPopup();
-    } else {
-        console.error("Координаты некорректны:", lat, lon);
     }
+
+    {% if forecast %}
+    const forecastData = {{ forecast|safe }};
+    const labels = forecastData.map(f => f.date);
+    const temps = forecastData.map(f => f.avg_temp);
+    const rains = forecastData.map(f => f.total_rain);
+
+    const ctx = document.getElementById('forecastChart').getContext('2d');
+    new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: labels,
+            datasets: [
+                {
+                    label: 'Температура °C',
+                    data: temps,
+                    type: 'line',
+                    borderColor: 'orange',
+                    backgroundColor: 'rgba(255,165,0,0.2)',
+                    tension: 0.4
+                },
+                {
+                    label: 'Осадки мм',
+                    data: rains,
+                    backgroundColor: 'rgba(0,128,255,0.4)'
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                tooltip: {
+                    callbacks: {
+                        label: function(ctx) {
+                            const index = ctx.dataIndex;
+                            const f = forecastData[index];
+                            let val = ctx.dataset.label.includes('Температура') ? f.avg_temp + '°C' : f.total_rain + ' мм';
+                            return ctx.dataset.label + ': ' + val + ' → ' + f.recommendation;
+                        }
+                    }
+                }
+            }
+        }
+    });
+    {% endif %}
 });
 </script>
 {% endblock %}

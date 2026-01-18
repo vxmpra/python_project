@@ -1,10 +1,20 @@
-import requests
 import os
+from datetime import datetime
+from collections import defaultdict
+
+import requests
 from django.utils import timezone
+
 from .models import Weather
 
+# Константы для API
+OPENWEATHER_CURRENT_URL = "https://api.openweathermap.org/data/2.5/weather"
+OPENWEATHER_FORECAST_URL = "http://api.openweathermap.org/data/2.5/forecast"
+DEFAULT_LAT = 55.7558
+DEFAULT_LON = 37.6173
 
-#Расчёт полива по факторам: тип растения, температура, влажность, осадки
+
+# Расчёт полива по факторам: тип растения, температура, влажность, осадки
 def simple_watering(plant, temp, hum, precip):
     if temp < 5:
         return 0, f"Слишком холодно ({temp}°C) - полив не требуется"
@@ -21,16 +31,33 @@ def simple_watering(plant, temp, hum, precip):
     base = base_norms.get(plant.plant_type.name, 1.0)
 
     # температура: чем жарче тем больше полив
-    tf = 1.5 if temp > 30 else 1.3 if temp > 25 else 0.7 if temp < 15 else 1.0
+    if temp > 30:
+        temp_factor = 1.5
+    elif temp > 25:
+        temp_factor = 1.3
+    elif temp < 15:
+        temp_factor = 0.7
+    else:
+        temp_factor = 1.0
 
     # влажность: чем суше тем больше полив
-    hf = 0.7 if hum > 70 else 1.3 if hum < 30 else 1.0
+    if hum > 70:
+        humidity_factor = 0.7
+    elif hum < 30:
+        humidity_factor = 1.3
+    else:
+        humidity_factor = 1.0
 
     # осадки: дождь уменьшает полив
-    rf = 0.3 if precip > 2 else 0.7 if precip > 0 else 1.0
+    if precip > 2:
+        rain_factor = 0.3
+    elif precip > 0:
+        rain_factor = 0.7
+    else:
+        rain_factor = 1.0
 
     # расчет
-    water = round(max(0.1, base * tf * hf * rf), 1)
+    water = round(max(0.1, base * temp_factor * humidity_factor * rain_factor), 1)
 
     # рекомендации
     if temp > 30:
@@ -75,10 +102,13 @@ def validate_city_name(city_name):
         return city_name.strip()
 
     try:
-        response = requests.get(
-            f"https://api.openweathermap.org/data/2.5/weather?q={city_name}&appid={api_key}&lang=ru",
-            timeout=3
-        )
+        params = {
+            'q': city_name,
+            'appid': api_key,
+            'lang': 'ru'
+        }
+
+        response = requests.get(OPENWEATHER_CURRENT_URL, params=params, timeout=3)
 
         # если город найден, возвращаем название
         if response.status_code == 200:
@@ -87,7 +117,6 @@ def validate_city_name(city_name):
         return None
 
     except (requests.RequestException, KeyError):
-
         return None
 
 
@@ -103,8 +132,8 @@ def get_weather_data(city):
 
     if cached_weather:
         # берем координаты из БД или по умолчанию
-        lat = cached_weather.latitude or 55.7558
-        lon = cached_weather.longitude or 37.6173
+        lat = cached_weather.latitude or DEFAULT_LAT
+        lon = cached_weather.longitude or DEFAULT_LON
 
         return {
             'temperature': cached_weather.temperature,
@@ -120,10 +149,15 @@ def get_weather_data(city):
     # API запрос (если нет в кэше)
     try:
         api_key = os.environ.get('OPENWEATHER_API_KEY')
-        data = requests.get(
-            f"https://api.openweathermap.org/data/2.5/weather?q={city}&appid={api_key}&units=metric&lang=ru",
-            timeout=5
-        ).json()
+        params = {
+            'q': city,
+            'appid': api_key,
+            'units': 'metric',
+            'lang': 'ru'
+        }
+
+        response = requests.get(OPENWEATHER_CURRENT_URL, params=params, timeout=5)
+        data = response.json()
 
         lat = data['coord']['lat']
         lon = data['coord']['lon']
@@ -155,12 +189,12 @@ def get_weather_data(city):
             'has_data': True
         }
 
-    except Exception as e:
+    except Exception:
         # ищем последние доступные данные для этого города
         last_weather = Weather.objects.filter(city=city).order_by('-date').first()
         if last_weather:
-            lat = last_weather.latitude or 55.7558
-            lon = last_weather.longitude or 37.6173
+            lat = last_weather.latitude or DEFAULT_LAT
+            lon = last_weather.longitude or DEFAULT_LON
 
             return {
                 'temperature': last_weather.temperature,
@@ -180,8 +214,47 @@ def get_weather_data(city):
             'humidity': 50,
             'precipitation': 0,
             'description': "Нет данных",
-            'lat': 55.7558,
-            'lon': 37.6173,
+            'lat': DEFAULT_LAT,
+            'lon': DEFAULT_LON,
             'from_cache': False,
             'has_data': False
         }
+
+
+# Получение 5 дневного прогноза погоды для графика
+def get_5day_forecast(city, max_days=5):
+    forecast = []
+
+    try:
+        api_key = os.environ.get('OPENWEATHER_API_KEY')
+        params = {
+            'q': city,
+            'units': 'metric',
+            'appid': api_key
+        }
+
+        response = requests.get(OPENWEATHER_FORECAST_URL, params=params)
+        data = response.json()
+        daily_data = defaultdict(list)
+
+        for entry in data['list']:
+            date_str = entry['dt_txt'].split(" ")[0]
+            temp = entry['main']['temp']
+            rain = entry.get('rain', {}).get('3h', 0)
+            daily_data[date_str].append({'temp': temp, 'rain': rain})
+
+        for date, values in daily_data.items():
+            avg_temp = sum(v['temp'] for v in values) / len(values)
+            total_rain = sum(v['rain'] for v in values)
+            forecast.append({
+                'date': datetime.strptime(date, "%Y-%m-%d").strftime("%a %d/%m"),
+                'avg_temp': round(avg_temp, 1),
+                'total_rain': round(total_rain, 1)
+            })
+
+        forecast = forecast[:max_days]
+
+    except Exception:
+        forecast = []
+
+    return forecast
