@@ -5,10 +5,20 @@ from pathlib import Path
 
 load_dotenv()
 
-SECRET_KEY = os.getenv('SECRET_KEY')
-DEBUG = os.getenv('DEBUG') == 'True'
-
 BASE_DIR = Path(__file__).resolve().parent.parent
+
+DEBUG = os.getenv('DEBUG', 'False') == 'True'
+
+SECRET_KEY = os.getenv('SECRET_KEY')
+if not SECRET_KEY and not DEBUG:
+    raise ValueError("SECRET_KEY не установлен в переменных окружения")
+
+OPENWEATHER_API_KEY = os.getenv('OPENWEATHER_API_KEY', '')
+
+if not DEBUG:
+    if not OPENWEATHER_API_KEY:
+        print("OPENWEATHER_API_KEY не установлен. Погодные данные не будут работать.")
+
 
 ALLOWED_HOSTS = ['vxmpra.pythonanywhere.com', 'localhost', '127.0.0.1',]
 
