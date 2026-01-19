@@ -25,37 +25,39 @@
 ## 3. Модели данных (сущности)
 
 ### Plant (Растение пользователя)
-- plant_type — связь с PlantType (ForeignKey)
-- owner — владелец растения (ForeignKey -> User)  
-- city — город, где выращивается растение 
+- plant_type (ForeignKey → PlantType): связь с типом растения для получения характеристик
+- owner (ForeignKey → User): владелец растения, обеспечивает изоляцию данных между пользователями
+- city (CharField): географическая локация для персонализации рекомендаций
 
 Каждое растение принадлежит конкретному пользователю.
 
 ### PlantCategory (Категория растения)
-- name — название категории (например, Овощ, Ягода, Цветок)
+- name (CharField, unique): уникальное название категории (например, "Овощи", "Фрукты", "Цветы")
+
+Связи: Связана с PlantType через ForeignKey (один-ко-многим)
 
 Названия категорий являются уникальными.
 
 ### PlantType (Тип растения)
-- name — название типа растения (например, Томат, Огурец)
-- category — связь с PlantCategory (ForeignKey)
-- description — описание растения
-- image — фотография растения (ImageField, опционально)
+- name (CharField, unique): уникальное название типа растения (например, Томат, Огурец)
+- category (ForeignKey → PlantCategory): классификация по категориям
+- description (TextField): описание растения
+- image (ImageField, optional): визуальное представление растения
 
 Названия типов растений являются уникальными.
 
 ### WateringRecommendation (Рекомендации по поливу)
-- plant — связь с Plant (ForeignKey)  
-- date — дата рекомендации  
-- water_amount — рекомендуемое количество воды (в литрах)  
-- note — текстовое пояснение рекомендаций
+- plant (ForeignKey → Plant): связь с конкретным растением пользователя
+- date (DateField): дата формирования рекомендации 
+- water_amount (FloatField): расчётное количество воды в литрах
+- note (TextField): детальное обоснование с учётом метеофакторов
 
 Рекомендации формируются автоматически на основе погодных условий.
 
 ### ProtectionAdvice (Советы по защите растений)
-- plant_type — связь с PlantType (ForeignKey)  
-- pest_or_disease — тип вредителя или болезни  
-- recommendation — текст совета по защите
+- plant_type (ForeignKey → PlantType): привязка советов к типам растений 
+- pest_or_disease (CharField): тип вредителя или болезни
+- recommendation (TextField): текст совета по защите
 
 Используется для отображения справочной информации пользователю.
 
@@ -68,14 +70,16 @@
 
 Поля:
 
-- city — город
-- date — дата погодных данных 
-- temperature — температура воздуха (°C) 
-- humidity — влажность (%)
-- precipitation — осадки (мм)
-- description - описание погоды
-- latitude — широта (для отображения карты)
-- longitude — долгота (для отображения карты)
+- city (CharField): город для метеоданных
+- date (DateField): дата погодных данных
+- temperature (FloatField): температура воздуха в °C
+- humidity (FloatField): относительная влажность в %
+- precipitation (FloatField): количество осадков в мм
+- description (CharField): текстовое описание погоды
+- latitude (FloatField): широта (для отображения карты)
+- longitude (FloatField): долгота (для отображения карты)
+
+<img width="1189" height="625" alt="image" src="https://github.com/user-attachments/assets/c9119a4b-80a9-4ba2-ac65-1364005708bf" />
 
 ## 4. Ключевой функционал (User Stories)
 
